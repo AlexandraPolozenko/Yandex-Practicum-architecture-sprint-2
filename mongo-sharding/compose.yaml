@@ -1,6 +1,7 @@
 services:
+
   configSrv:
-    image: dh-mirror.gitverse.ru/mongo:latest
+    image: mongo:latest
     container_name: configSrv 
     restart: always
     ports:
@@ -12,7 +13,7 @@ services:
       - config-data:/data/db
     command:
       [
-        "--configsvr", 
+        "--configsvr",  
         "--replSet",
         "config_server",
         "--bind_ip_all",
@@ -25,7 +26,7 @@ services:
       start_period: 10s
 
   shard1:
-    image: dh-mirror.gitverse.ru/mongo:latest
+    image: mongo:latest
     container_name: shard1
     restart: always
     ports:
@@ -39,7 +40,7 @@ services:
       [
         "--shardsvr",
         "--replSet",
-        "shard1",
+        "shard1", 
         "--bind_ip_all",
         "--port",
         "27018"
@@ -49,8 +50,9 @@ services:
       interval: 5s
       start_period: 10s
 
+  
   shard2:
-    image: dh-mirror.gitverse.ru/mongo:latest
+    image: mongo:latest
     container_name: shard2
     restart: always
     ports:
@@ -62,10 +64,10 @@ services:
       - shard2-data:/data/db
     command:
       [
-        "--shardsvr",
+        "--shardsvr", 
         "--replSet",
         "shard2", 
-        "--bind_ip_all",
+        "--bind_ip_all", 
         "--port",
         "27019"
       ]
@@ -73,6 +75,7 @@ services:
       test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
       interval: 5s
       start_period: 10s
+  
   
   mongos_router:
     image: mongo:latest
@@ -96,6 +99,24 @@ services:
       test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
       interval: 5s
       start_period: 10s
+  
+  pymongo_api:
+    container_name: pymongo_api_shard
+    build: 
+      context: api_app
+      dockerfile: Dockerfile
+    image: kazhem/pymongo_api:1.0.0
+    depends_on:
+      - mongos_router
+    ports:
+      - 8080:8080
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.6
+    environment:
+      MONGODB_URL: "mongodb://mongos_router:27020"
+      MONGODB_DATABASE_NAME: "somedb"
+
 
 networks:
   app-network:
